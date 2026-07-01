@@ -1,30 +1,29 @@
 /* ===== Horizon Custom Styles ===== */
 
-/* --- CSS Variables & Dark Mode (Horizon Dawn) --- */
-/* Palette derived from horizon-header.svg sunrise:
-   #312e81 deep indigo · #be185d rose · #f97316 orange · #fbbf24 gold
-   #4c1d95 mountain purple · #701a75 distant purple                  */
+/* --- CSS Variables & Dark Mode (Horizon Sky) --- */
+/* Light sky-blue palette:
+   #4a90d9 sky blue · #6ba8e0 lighter sky · #eaf4fc pale sky wash        */
 :root {
-  --hz-bg: #fdfcfb;          /* near-white, faint warm */
-  --hz-surface: #f7f5f2;     /* airy off-white */
-  --hz-border: #ece8e2;      /* very light warm border */
-  --hz-text: #4a4658;        /* soft indigo-gray ink */
-  --hz-text-muted: #9a95a8;  /* light lavender gray */
-  --hz-link: #8a6fc0;        /* soft muted violet */
-  --hz-code-bg: #f4f1ec;     /* pale code bg */
-  --hz-accent: #e79b6b;      /* muted peach, gentle */
+  --hz-bg: #fbfdff;          /* near-white, faint blue */
+  --hz-surface: #f0f6fc;     /* airy pale sky */
+  --hz-border: #dde9f3;      /* soft sky-blue border */
+  --hz-text: #3a4a5c;        /* soft slate-blue ink */
+  --hz-text-muted: #8ba0b3;  /* light blue-gray */
+  --hz-link: #4a90d9;        /* clear sky blue */
+  --hz-code-bg: #eef4fa;     /* pale sky code bg */
+  --hz-accent: #5aa8e0;      /* bright sky-blue accent */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --hz-bg: #1a1726;        /* pre-dawn deep purple-black */
-    --hz-surface: #231f33;   /* night sky surface */
-    --hz-border: #342f4a;    /* indigo border */
-    --hz-text: #e8e4f0;      /* moonlight white-lavender */
-    --hz-text-muted: #8c86a0; /* muted twilight */
-    --hz-link: #f0a848;      /* dawn gold */
-    --hz-code-bg: #211d30;   /* deep code bg */
-    --hz-accent: #e87040;    /* sunrise orange-coral */
+    --hz-bg: #121a24;        /* deep night-sky navy */
+    --hz-surface: #1a2532;   /* dark blue surface */
+    --hz-border: #2a3a4c;    /* slate border */
+    --hz-text: #dce8f2;      /* soft moonlit blue-white */
+    --hz-text-muted: #8296a8; /* muted blue-gray */
+    --hz-link: #6db4ec;      /* luminous sky blue */
+    --hz-code-bg: #17212d;   /* deep code bg */
+    --hz-accent: #5aa8e0;    /* sky-blue accent */
   }
 }
 
@@ -63,7 +62,7 @@ h1, h2, h3, h4, h5, h6 {
    with a light gradient scrim so the white title stays legible. */
 .page-header {
   background:
-    linear-gradient(120deg, rgba(110, 98, 160, 0.62), rgba(140, 112, 172, 0.5), rgba(224, 148, 100, 0.55)),
+    linear-gradient(120deg, rgba(74, 144, 217, 0.6), rgba(107, 168, 224, 0.48), rgba(150, 200, 235, 0.5)),
     url("https://picsum.photos/1600/400") center / cover no-repeat !important;
 }
 
@@ -72,7 +71,7 @@ h1, h2, h3, h4, h5, h6 {
 .page-header .project-tagline,
 .page-header a {
   color: #fff !important;
-  text-shadow: 0 1px 6px rgba(60, 50, 80, 0.45) !important;
+  text-shadow: 0 1px 6px rgba(30, 60, 100, 0.5) !important;
 }
 
 /* --- Score Badge --- */
@@ -88,10 +87,10 @@ h1, h2, h3, h4, h5, h6 {
   vertical-align: middle;
 }
 
-.score-badge[data-tier="high"] { background: #c77b9e; } /* soft rose */
-.score-badge[data-tier="good"] { background: #e79b6b; } /* muted peach */
-.score-badge[data-tier="mid"]  { background: #d9b96b; } /* soft gold */
-.score-badge[data-tier="low"]  { background: #b3aec0; } /* pale lavender */
+.score-badge[data-tier="high"] { background: #2f6fb3; } /* deep sky blue */
+.score-badge[data-tier="good"] { background: #4a90d9; } /* sky blue */
+.score-badge[data-tier="mid"]  { background: #7bb2e3; } /* light sky */
+.score-badge[data-tier="low"]  { background: #aecbe0; } /* pale sky-gray */
 
 /* --- Tag Pills --- */
 .tag-line code {
@@ -104,8 +103,8 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (prefers-color-scheme: dark) {
   .tag-line code {
-    background: #342f4a !important;   /* indigo border */
-    color: #f0a848 !important;        /* dawn gold */
+    background: #2a3a4c !important;   /* slate border */
+    color: #6db4ec !important;        /* luminous sky blue */
   }
 }
 
