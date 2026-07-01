@@ -124,9 +124,17 @@ class AnthropicClient(AIClient):
 
         api_key = _resolve_api_key(config)
 
-        kwargs = {"api_key": api_key}
+        kwargs = {}
         if config.base_url:
+            # Custom gateways (e.g. an internal Anthropic-compatible proxy)
+            # typically expect `Authorization: Bearer <key>` rather than the
+            # `x-api-key` header that the official API uses. Passing the key as
+            # auth_token makes the SDK send the Bearer header. Without this,
+            # such gateways reject the request (401/502).
+            kwargs["auth_token"] = api_key
             kwargs["base_url"] = config.base_url
+        else:
+            kwargs["api_key"] = api_key
 
         self.client = AsyncAnthropic(**kwargs)
         self.model = config.model

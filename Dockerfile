@@ -7,6 +7,13 @@ WORKDIR /app
 # Install uv for faster dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+# Build-time proxy (passed via docker-compose build args).
+# Needed because `uv sync` below fetches packages from pypi.org during build,
+# and runtime `environment` proxy settings do NOT apply at build time.
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
 # Copy project files
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src

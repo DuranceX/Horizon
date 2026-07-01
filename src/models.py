@@ -335,6 +335,16 @@ class WebhookConfig(BaseModel):
     fallback_layout: str = (
         "markdown"  # Layout to use when the requested layout is unsupported
     )
+    pages_base_url: Optional[str] = (
+        None  # Base URL of the published GitHub Pages site, e.g.
+        # "https://<user>.github.io/<repo>". When set, oversized Feishu/Lark
+        # collapsible cards fall back to a compact card linking to the
+        # published daily page instead of being silently dropped.
+    )
+    oversize_char_limit: int = (
+        28000  # Byte-budget for a single Feishu/Lark card; cards estimated to
+        # exceed this fall back to the compact "overview + link" layout.
+    )
     languages: Optional[List[str]] = (
         None  # Optional language filter for webhook delivery; defaults to all AI languages
     )

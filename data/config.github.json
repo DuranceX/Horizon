@@ -118,6 +118,8 @@
     "platform": "feishu",
     "layout": "collapsible",
     "fallback_layout": "markdown",
+    "pages_base_url": "https://durancex.github.io/Horizon",
+    "oversize_char_limit": 28000,
     "languages": [
       "zh"
     ],

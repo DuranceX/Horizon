@@ -169,6 +169,47 @@ def _collapsible_panel(title: str, content: str) -> dict[str, Any]:
     }
 
 
+def _link_button(text: str, url: str) -> dict[str, Any]:
+    """Build a Feishu Card JSON 2.0 primary button that opens *url*."""
+    return {
+        "tag": "button",
+        "text": _text(text),
+        "type": "primary",
+        "behaviors": [
+            {
+                "type": "open_url",
+                "default_url": url,
+            }
+        ],
+    }
+
+
+def _daily_page_url(base_url: str, date: str, lang: str) -> Optional[str]:
+    """Build the published GitHub Pages URL for a daily summary post.
+
+    Jekyll (kramdown default permalink) renders each post at
+    ``/<year>/<month>/<day>/summary-<lang>.html``.  The *date* is the
+    ``YYYY-MM-DD`` string used for the post filename, so the URL is fully
+    determined locally at generation time — it does not depend on the
+    deploy having finished.
+
+    Args:
+        base_url: Site base, e.g. "https://user.github.io/Horizon"
+        date: Post date as "YYYY-MM-DD"
+        lang: Language code used in the post filename ("en", "zh", ...)
+
+    Returns:
+        The full page URL, or None if *date* is not a valid YYYY-MM-DD.
+    """
+    parts = date.split("-")
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        return None
+    year, month, day = parts
+    base = base_url.rstrip("/")
+    return f"{base}/{year}/{month}/{day}/summary-{lang}.html"
+
+
+
 def _extract_headers(headers_str: Optional[str]) -> dict:
     """Parse custom headers from a multi-line "Key: Value" string.
 
@@ -377,7 +418,14 @@ class WebhookNotifier:
         lang: str,
         summarizer: DailySummarizer,
     ) -> dict[str, Any]:
-        """Build a single Feishu Card JSON 2.0 message with collapsed item details."""
+        """Build a Feishu Card JSON 2.0 message with collapsed item details.
+
+        Feishu silently drops interactive cards whose JSON body exceeds the
+        per-message size limit (~30KB).  When the full collapsible card is
+        estimated to exceed ``oversize_char_limit`` and a ``pages_base_url``
+        is configured, fall back to a compact "overview + link" card that
+        points to the published daily page instead.
+        """
         overview = self._build_feishu_collapsible_overview(
             item_count=len(important_items),
             all_items_count=all_items_count,
@@ -403,6 +451,40 @@ class WebhookNotifier:
                 )
             )
 
+        card = self._wrap_feishu_card(elements, date, lang)
+
+        # Fall back to a compact link card when the full card is too large.
+        page_url = self._daily_page_url(date, lang)
+        if page_url is not None:
+            limit = getattr(self.config, "oversize_char_limit", 28000)
+            estimated = len(json.dumps(card, ensure_ascii=False).encode("utf-8"))
+            if estimated > limit:
+                logger.warning(
+                    "Feishu collapsible card ~%d bytes exceeds limit %d; "
+                    "falling back to compact link card for %s (%s).",
+                    estimated, limit, date, lang,
+                )
+                return self._build_feishu_link_card(
+                    important_items=important_items,
+                    all_items_count=all_items_count,
+                    date=date,
+                    lang=lang,
+                    page_url=page_url,
+                )
+
+        return card
+
+    def _daily_page_url(self, date: str, lang: str) -> Optional[str]:
+        """Return the published daily page URL, or None if not configured."""
+        base_url = getattr(self.config, "pages_base_url", None)
+        if not base_url:
+            return None
+        return _daily_page_url(base_url, date, lang)
+
+    def _wrap_feishu_card(
+        self, elements: list[dict[str, Any]], date: str, lang: str
+    ) -> dict[str, Any]:
+        """Wrap card body *elements* in the standard interactive card envelope."""
         return {
             "msg_type": "interactive",
             "card": {
@@ -427,6 +509,55 @@ class WebhookNotifier:
                 },
             },
         }
+
+    def _build_feishu_link_card(
+        self,
+        important_items: List[ContentItem],
+        all_items_count: int,
+        date: str,
+        lang: str,
+        page_url: str,
+    ) -> dict[str, Any]:
+        """Build a compact "overview + top titles + read-more link" card.
+
+        Used as the oversize fallback: the full briefing lives on the
+        published GitHub Pages post, and the card carries just enough
+        context to decide whether to open it.
+        """
+        overview = self._build_feishu_collapsible_overview(
+            item_count=len(important_items),
+            all_items_count=all_items_count,
+            date=date,
+            lang=lang,
+        )
+
+        # A short ranked list of the top items so readers get a preview
+        # without opening the page. Kept small on purpose — this card exists
+        # precisely because the full content did not fit.
+        top_items = important_items[: min(10, len(important_items))]
+        title_lines = []
+        for item_index, item in enumerate(top_items, start=1):
+            title = str(item.metadata.get(f"title_{lang}") or item.title)
+            score = item.ai_score or "?"
+            title_lines.append(f"{item_index}. {title} ⭐️ {score}/10")
+
+        if title_lines:
+            heading = "**本期要点**" if lang == "zh" else "**In this issue**"
+            preview = heading + "\n" + "\n".join(title_lines)
+        else:
+            preview = ""
+
+        button_text = "👉 阅读完整日报" if lang == "zh" else "👉 Read the full briefing"
+
+        elements: list[dict[str, Any]] = [_markdown(overview)]
+        if preview:
+            elements.append({"tag": "hr"})
+            elements.append(_markdown(preview))
+        elements.append({"tag": "hr"})
+        elements.append(_link_button(button_text, page_url))
+
+        return self._wrap_feishu_card(elements, date, lang)
+
 
     def build_preview(self, variables: dict) -> dict[str, Any]:
         """Build the fully rendered request for dry-run preview."""

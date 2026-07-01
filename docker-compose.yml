@@ -1,13 +1,30 @@
 services:
   horizon:
-    build: .
+    build:
+      context: .
+      # Proxy for build-time dependency fetching (uv sync pulls from pypi.org).
+      args:
+        HTTP_PROXY: http://host.docker.internal:7897
+        HTTPS_PROXY: http://host.docker.internal:7897
+        NO_PROXY: localhost,127.0.0.1
     container_name: horizon
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env:ro
     environment:
       - TZ=UTC
+      # Proxy for accessing GitHub, Reddit, Twitter, etc.
+      # host.docker.internal points to the host machine (macOS/Windows Docker Desktop)
+      - HTTP_PROXY=http://host.docker.internal:7897
+      - HTTPS_PROXY=http://host.docker.internal:7897
+      - ALL_PROXY=http://host.docker.internal:7897
+      - NO_PROXY=localhost,127.0.0.1,.bilibili.co,bilibili.co
+      # Playwright-based Twitter scraper reads PROXY directly
+      - PROXY=http://host.docker.internal:7897
     restart: unless-stopped
+    # Ensure host.docker.internal resolves to the host (needed on Linux; harmless on macOS/Windows)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # Run daily at 8:00 AM UTC (adjust as needed)
     # For one-time run, use: docker compose run --rm horizon
     command: ["--hours", "24"]

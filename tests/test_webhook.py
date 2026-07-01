@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from src.models import ContentItem, SourceType, WebhookConfig
 from src.services.webhook import (
     WebhookNotifier,
+    _daily_page_url,
     _format_markdown_for_webhook,
     _prepare_variables_for_body,
     _render,
@@ -1021,6 +1022,130 @@ class TestSendDailySummary:
         assert panels[0]["header"]["title"]["content"].startswith("1. Item A")
         assert "Item 1/2" in panels[0]["elements"][0]["content"]
         assert panels[1]["header"]["title"]["content"].startswith("2. Item B")
+        del os.environ[_TEST_URL_ENV]
+
+
+def _big_item(index, score=8.0):
+    """A ContentItem with a large body, to force oversize cards."""
+    body = "内容" * 3000
+    title = f"很长的标题编号{index}"
+    return ContentItem(
+        id=f"github:test:{index}",
+        source_type=SourceType.GITHUB,
+        title=title,
+        url=f"https://example.com/{index}",
+        content=body,
+        author="testuser",
+        published_at=datetime(2026, 4, 24, 12, 0, 0, tzinfo=timezone.utc),
+        fetched_at=datetime(2026, 4, 24, 12, 0, 0, tzinfo=timezone.utc),
+        ai_score=score,
+        ai_summary=body,
+        ai_tags=["test"],
+        metadata={"title_zh": title, "detailed_summary_zh": body},
+    )
+
+
+class TestDailyPageUrl:
+    def test_builds_jekyll_permalink(self):
+        assert (
+            _daily_page_url("https://user.github.io/Horizon", "2026-06-30", "zh")
+            == "https://user.github.io/Horizon/2026/06/30/summary-zh.html"
+        )
+
+    def test_strips_trailing_slash(self):
+        assert (
+            _daily_page_url("https://user.github.io/Horizon/", "2026-06-30", "en")
+            == "https://user.github.io/Horizon/2026/06/30/summary-en.html"
+        )
+
+    def test_invalid_date_returns_none(self):
+        assert _daily_page_url("https://x.io/H", "not-a-date", "zh") is None
+        assert _daily_page_url("https://x.io/H", "2026-06", "zh") is None
+
+
+class TestFeishuOversizeFallback:
+    def test_small_card_stays_collapsible(self):
+        """A card under the byte budget keeps its collapsible panels."""
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            platform="feishu",
+            layout="collapsible",
+            pages_base_url="https://user.github.io/Horizon",
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer()
+        items = [_make_item(title="Item A"), _make_item(title="Item B")]
+
+        body = notifier._build_feishu_collapsible_body(
+            important_items=items,
+            all_items_count=20,
+            date="2026-06-30",
+            lang="en",
+            summarizer=summarizer,
+        )
+        elements = body["card"]["body"]["elements"]
+        assert any(e["tag"] == "collapsible_panel" for e in elements)
+        assert not any(e.get("tag") == "button" for e in elements)
+        del os.environ[_TEST_URL_ENV]
+
+    def test_oversize_card_falls_back_to_link(self):
+        """An oversize card is replaced by an overview + read-more link card."""
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            platform="feishu",
+            layout="collapsible",
+            pages_base_url="https://user.github.io/Horizon",
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer()
+        items = [_big_item(i) for i in range(20)]
+
+        body = notifier._build_feishu_collapsible_body(
+            important_items=items,
+            all_items_count=200,
+            date="2026-06-30",
+            lang="zh",
+            summarizer=summarizer,
+        )
+        elements = body["card"]["body"]["elements"]
+        assert not any(e.get("tag") == "collapsible_panel" for e in elements)
+        buttons = [e for e in elements if e.get("tag") == "button"]
+        assert len(buttons) == 1
+        assert (
+            buttons[0]["behaviors"][0]["default_url"]
+            == "https://user.github.io/Horizon/2026/06/30/summary-zh.html"
+        )
+        # The whole fallback card must itself fit within the budget.
+        size = len(json.dumps(body, ensure_ascii=False).encode("utf-8"))
+        assert size <= config.oversize_char_limit
+        del os.environ[_TEST_URL_ENV]
+
+    def test_oversize_without_base_url_keeps_collapsible(self):
+        """Without pages_base_url there is nowhere to link, so no fallback."""
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            platform="feishu",
+            layout="collapsible",
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer()
+        items = [_big_item(i) for i in range(20)]
+
+        body = notifier._build_feishu_collapsible_body(
+            important_items=items,
+            all_items_count=200,
+            date="2026-06-30",
+            lang="zh",
+            summarizer=summarizer,
+        )
+        elements = body["card"]["body"]["elements"]
+        assert any(e["tag"] == "collapsible_panel" for e in elements)
         del os.environ[_TEST_URL_ENV]
 
     def test_language_filter_skips_non_matching_lang(self):
