@@ -5,14 +5,14 @@
    #312e81 deep indigo · #be185d rose · #f97316 orange · #fbbf24 gold
    #4c1d95 mountain purple · #701a75 distant purple                  */
 :root {
-  --hz-bg: #faf8f5;          /* warm parchment white */
-  --hz-surface: #f3f0eb;     /* slightly warm gray */
-  --hz-border: #e0dbd3;      /* warm border */
-  --hz-text: #2d2a3e;        /* deep indigo-ink */
-  --hz-text-muted: #7c7891;  /* muted lavender gray */
-  --hz-link: #6d4aaa;        /* mountain purple, lighter */
-  --hz-code-bg: #f0ede7;     /* warm code bg */
-  --hz-accent: #e0652e;      /* sunrise orange, toned down */
+  --hz-bg: #fdfcfb;          /* near-white, faint warm */
+  --hz-surface: #f7f5f2;     /* airy off-white */
+  --hz-border: #ece8e2;      /* very light warm border */
+  --hz-text: #4a4658;        /* soft indigo-gray ink */
+  --hz-text-muted: #9a95a8;  /* light lavender gray */
+  --hz-link: #8a6fc0;        /* soft muted violet */
+  --hz-code-bg: #f4f1ec;     /* pale code bg */
+  --hz-accent: #e79b6b;      /* muted peach, gentle */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,12 +56,15 @@ hr {
 h1, h2, h3, h4, h5, h6 {
   color: var(--hz-text) !important;
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
 }
 
-/* Override Cayman header gradient — Horizon sunrise from SVG */
+/* Override Cayman header — random Unsplash-sourced cover via Lorem Picsum,
+   with a light gradient scrim so the white title stays legible. */
 .page-header {
-  background: linear-gradient(120deg, #312e81, #be185d, #f97316) !important;
+  background:
+    linear-gradient(120deg, rgba(110, 98, 160, 0.62), rgba(140, 112, 172, 0.5), rgba(224, 148, 100, 0.55)),
+    url("https://picsum.photos/1600/400") center / cover no-repeat !important;
 }
 
 .page-header h1,
@@ -69,6 +72,7 @@ h1, h2, h3, h4, h5, h6 {
 .page-header .project-tagline,
 .page-header a {
   color: #fff !important;
+  text-shadow: 0 1px 6px rgba(60, 50, 80, 0.45) !important;
 }
 
 /* --- Score Badge --- */
@@ -84,10 +88,10 @@ h1, h2, h3, h4, h5, h6 {
   vertical-align: middle;
 }
 
-.score-badge[data-tier="high"] { background: #be185d; } /* rose — from SVG */
-.score-badge[data-tier="good"] { background: #e0652e; } /* sunrise orange */
-.score-badge[data-tier="mid"]  { background: #d4a017; } /* warm gold */
-.score-badge[data-tier="low"]  { background: #7c7891; } /* muted lavender */
+.score-badge[data-tier="high"] { background: #c77b9e; } /* soft rose */
+.score-badge[data-tier="good"] { background: #e79b6b; } /* muted peach */
+.score-badge[data-tier="mid"]  { background: #d9b96b; } /* soft gold */
+.score-badge[data-tier="low"]  { background: #b3aec0; } /* pale lavender */
 
 /* --- Tag Pills --- */
 .tag-line code {
